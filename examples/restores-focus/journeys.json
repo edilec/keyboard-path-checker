@@ -1,0 +1,26 @@
+{
+  "schemaVersion": "1",
+  "journeys": [
+    {
+      "id": "open-and-escape",
+      "description": "Escape closes the dialog and focus comes back to the control that opened it.",
+      "steps": [
+        { "tabTo": "delete-order" },
+        { "press": "Enter", "on": "delete-order" },
+        { "expectFocus": "confirm-cancel" },
+        { "press": "Escape" },
+        { "expectFocus": "delete-order" }
+      ]
+    },
+    {
+      "id": "open-and-cancel",
+      "description": "Closing with the Cancel button returns focus the same way.",
+      "steps": [
+        { "press": "Space", "on": "delete-order" },
+        { "expectFocus": "confirm-cancel" },
+        { "press": "Enter", "on": "confirm-cancel" },
+        { "expectFocus": "delete-order" }
+      ]
+    }
+  ]
+}

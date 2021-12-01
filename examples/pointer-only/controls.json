@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1",
+  "capture": {
+    "method": "manual keyboard walk of the fixture, every declared key really pressed",
+    "activationObserved": true
+  },
+  "controls": [
+    { "ref": "orders-table", "role": "link", "name": "Order 4471-B", "tabbable": true, "activatedBy": ["Enter", "pointer"] },
+    { "ref": "delete-order", "role": "button", "name": "Delete order", "tabbable": true, "activatedBy": ["pointer"] },
+    { "ref": "open-settings", "role": "button", "name": "Settings", "tabbable": true, "activatedBy": ["Enter", "Space", "pointer"], "opens": "settings-dialog" },
+    { "ref": "settings-close", "role": "button", "name": "Close", "tabbable": true, "activatedBy": ["Enter", "Space", "pointer"], "dismisses": "settings-dialog", "region": "settings-dialog" }
+  ],
+  "regions": [
+    {
+      "ref": "settings-dialog",
+      "role": "dialog",
+      "modal": true,
+      "dismissKeys": ["Escape"],
+      "initialFocus": "settings-close",
+      "restoresFocusTo": "orders-table"
+    }
+  ]
+}

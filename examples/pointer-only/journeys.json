@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1",
+  "journeys": [
+    {
+      "id": "delete-by-keyboard",
+      "description": "Delete has to be usable without a pointer.",
+      "steps": [
+        { "tabTo": "delete-order" },
+        { "press": "Enter", "on": "delete-order" }
+      ]
+    },
+    {
+      "id": "settings-open-and-close",
+      "description": "Escape closes the dialog and focus comes back to the control that opened it.",
+      "steps": [
+        { "press": "Enter", "on": "open-settings" },
+        { "expectFocus": "settings-close" },
+        { "press": "Escape" },
+        { "expectFocus": "open-settings" }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,23 @@
+{
+  "schemaVersion": "1",
+  "capture": {
+    "method": "manual keyboard walk of the fixture, every declared key really pressed",
+    "activationObserved": true
+  },
+  "controls": [
+    { "ref": "orders-table", "role": "link", "name": "Order 4471-B", "tabbable": true, "activatedBy": ["Enter", "pointer"] },
+    { "ref": "delete-order", "role": "button", "name": "Delete order", "tabbable": true, "activatedBy": ["Enter", "Space", "pointer"], "opens": "confirm-dialog" },
+    { "ref": "confirm-cancel", "role": "button", "name": "Cancel", "tabbable": true, "activatedBy": ["Enter", "Space", "pointer"], "dismisses": "confirm-dialog", "region": "confirm-dialog" },
+    { "ref": "confirm-delete", "role": "button", "name": "Delete", "tabbable": true, "activatedBy": ["Enter", "Space", "pointer"], "region": "confirm-dialog" }
+  ],
+  "regions": [
+    {
+      "ref": "confirm-dialog",
+      "role": "dialog",
+      "modal": true,
+      "dismissKeys": ["Escape"],
+      "initialFocus": "confirm-cancel",
+      "restoresFocusTo": "delete-order"
+    }
+  ]
+}
