@@ -61,10 +61,10 @@ export function runJourney(journey, model) {
     return null
   }
 
-  const resolveControl = (step, ref, what) => {
+  const resolveControl = (step, ref, what, tail) => {
     const control = model.controls.get(ref)
     if (control !== undefined) return control
-    emit(step, 'control-undeclared', `${what} names the control "${excerpt(ref, REF_LIMIT)}", and this capture does not describe it. The step was not run.`, {
+    emit(step, 'control-undeclared', `${what} "${excerpt(ref, REF_LIMIT)}", and this capture does not describe it. ${tail}`, {
       unknown: true,
       suggestion: 'Add the control to the capture, or correct the ref.',
     })
@@ -106,7 +106,7 @@ export function runJourney(journey, model) {
       focus = unknownFocus(`"${excerpt(regionRef, REF_LIMIT)}" does not declare where focus returns to`)
       return
     }
-    if (resolveControl(step, region.restoresFocusTo, `"${excerpt(regionRef, REF_LIMIT)}" restores focus to a control that`) === null) return
+    if (resolveControl(step, region.restoresFocusTo, `"${excerpt(regionRef, REF_LIMIT)}" restores focus to`, 'Where focus went was not checked.') === null) return
     focus = { known: true, ref: region.restoresFocusTo }
   }
 
@@ -132,7 +132,7 @@ export function runJourney(journey, model) {
         focus = unknownFocus(`"${excerpt(region.ref, REF_LIMIT)}" does not declare where focus goes when it opens`)
         return
       }
-      if (resolveControl(step, region.initialFocus, `"${excerpt(region.ref, REF_LIMIT)}" takes focus to a control that`) === null) return
+      if (resolveControl(step, region.initialFocus, `"${excerpt(region.ref, REF_LIMIT)}" takes focus to`, 'Where focus went was not checked.') === null) return
       focus = { known: true, ref: region.initialFocus }
       return
     }
@@ -144,7 +144,7 @@ export function runJourney(journey, model) {
   }
 
   const reach = (step, ref) => {
-    const control = resolveControl(step, ref, 'This step')
+    const control = resolveControl(step, ref, 'This step names the control', 'The step was not run.')
     if (control === null) return null
     checked += 1
     if (control.tabbable === null) {

@@ -521,6 +521,10 @@ function readCapture(run, document, file, limits) {
   }
 
   const controls = new Map()
+  // A ref is refused for the whole document, not just for the entry that
+  // collided: with three entries sharing a ref, deleting on the second would
+  // let the third walk straight back into the index the second one emptied.
+  const refusedControlRefs = new Set()
   for (let index = 0; index < rawControls.length; index += 1) {
     const pointer = `/controls/${index}`
     const raw = rawControls[index]
@@ -545,15 +549,16 @@ function readCapture(run, document, file, limits) {
       })
       continue
     }
-    if (controls.has(raw.ref)) {
+    if (controls.has(raw.ref) || refusedControlRefs.has(raw.ref)) {
       run.addUnknown({
         file,
         ruleId: 'control-duplicate-ref',
         pointer: `${pointer}/ref`,
-        message: `"${excerpt(raw.ref, REF_LIMIT)}" is declared more than once. Which entry a journey means is not something this tool will guess, so neither was used.`,
+        message: `"${excerpt(raw.ref, REF_LIMIT)}" is declared more than once. Which entry a journey means is not something this tool will guess, so none of them was used.`,
         suggestion: 'Give each control a unique ref.',
       })
       controls.delete(raw.ref)
+      refusedControlRefs.add(raw.ref)
       continue
     }
     const opens = optionalRef(run, raw.opens, file, `${pointer}/opens`, "This control's opens")
@@ -596,6 +601,7 @@ function readCapture(run, document, file, limits) {
   }
 
   const regions = new Map()
+  const refusedRegionRefs = new Set()
   const rawRegions = document.regions
   if (rawRegions !== undefined) {
     if (!Array.isArray(rawRegions)) {
@@ -631,15 +637,16 @@ function readCapture(run, document, file, limits) {
           })
           continue
         }
-        if (regions.has(raw.ref)) {
+        if (regions.has(raw.ref) || refusedRegionRefs.has(raw.ref)) {
           run.addUnknown({
             file,
             ruleId: 'region-duplicate-ref',
             pointer: `${pointer}/ref`,
-            message: `"${excerpt(raw.ref, REF_LIMIT)}" is declared more than once. Which entry a journey means is not something this tool will guess, so neither was used.`,
+            message: `"${excerpt(raw.ref, REF_LIMIT)}" is declared more than once. Which entry a journey means is not something this tool will guess, so none of them was used.`,
             suggestion: 'Give each region a unique ref.',
           })
           regions.delete(raw.ref)
+          refusedRegionRefs.add(raw.ref)
           continue
         }
         const dismissKeys = optionalTokens(run, raw.dismissKeys, file, `${pointer}/dismissKeys`, 'dismissKeys')
