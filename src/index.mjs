@@ -397,10 +397,8 @@ function checkEnvelope(run, document, file, allowedFields, invalidRule) {
 }
 
 function unknownFields(run, object, allowed, file, pointer) {
-  let clean = true
   for (const key of Object.keys(object).sort(byCodeUnit)) {
     if (allowed.includes(key)) continue
-    clean = false
     run.addUnknown({
       file,
       ruleId: 'unknown-field',
@@ -409,7 +407,6 @@ function unknownFields(run, object, allowed, file, pointer) {
       suggestion: `Known fields are ${allowed.join(', ')}.`,
     })
   }
-  return clean
 }
 
 function optionalRef(run, value, file, pointer, what) {
