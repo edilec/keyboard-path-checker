@@ -106,6 +106,19 @@ test('a pointer-only interaction fails its keyboard contract', async () => {
   assert.equal(finding.evidence, 'activatedBy: pointer')
 })
 
+test('a capture that records nothing at all as activating a control does not get called pointer-only', async () => {
+  const { code, report } = await reportFor({
+    'controls.json': capture({ controls: dialogControls({ activatedBy: [] }), regions: dialogRegion() }),
+    'journeys.json': journeys([{ id: 'open-it', steps: [{ press: 'Enter', on: 'open-dialog' }] }]),
+  })
+  assert.equal(code, 1)
+  const finding = report.findings.find((entry) => entry.ruleId === 'pointer-only-activation')
+  assert.ok(finding !== undefined)
+  assert.match(finding.message, /records nothing at all as activating it/)
+  assert.ok(!finding.message.includes('pointer only'), 'the report claimed a pointer works, which this capture does not say')
+  assert.equal(finding.evidence, 'activatedBy: (empty)')
+})
+
 test('the identical pointer-only journey is undetermined when the capture never tried the keys', async () => {
   const { code, report } = await reportFor({
     'controls.json': capture({ controls: dialogControls({ activatedBy: ['pointer'] }), regions: dialogRegion(), activationObserved: false }),

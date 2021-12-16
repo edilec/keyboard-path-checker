@@ -177,9 +177,14 @@ npm run check
 ```
 
 Runs `node --check` over every module, the test suite, all three examples at
-their expected exit codes, and `npm pack --dry-run`. No network access at any
-point, in the tool or in its tests. No runtime dependencies and no dev
-dependencies.
+their expected exit codes, and `npm pack --dry-run`.
+
+Nothing here reaches the network. The package declares no dependencies of any
+kind -- no runtime, dev, peer or optional -- the tool reads two local files and
+writes nothing, and `test/no-network.test.mjs` scans every module in `src`,
+`bin` and `test` for a network primitive and for an import that is neither a
+`node:` builtin nor a file in this package. That is a source scan, and it is
+what the claim rests on.
 
 ## Repository layout
 

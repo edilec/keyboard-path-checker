@@ -23,14 +23,14 @@ CLI and asserts the exit code.
 | --- | --- | :---: | --- |
 | `capture-invalid` | error | yes | A field of the capture is the wrong shape, so the entry it belongs to was not used. An entry this run could not read is not an entry that is not there. |
 | `capture-not-declared` | warning | yes | The capture declares no `capture` block, so whether anybody really tried each key is not stated. Every activation becomes undetermined. |
-| `control-duplicate-ref` | error | yes | One ref on more than one control. Which entry a journey means is not guessed, so neither was used. |
+| `control-duplicate-ref` | error | yes | One ref on more than one control. Which entry a journey means is not guessed, so none of them was used -- and the ref stays refused for the rest of the document, so a third entry cannot walk back into the index. |
 | `input-not-json` | error | yes | A document is not valid JSON. The detail says where the parse failed and never reproduces the document. |
 | `input-not-utf8` | error | yes | A document is not valid UTF-8. The decoder decides, not a search of decoded text for a replacement character. |
 | `input-too-large` | error | yes | A document is past `maxDocumentBytes`. It was not parsed. |
 | `input-unreadable` | error | yes | A document could not be opened. |
 | `journey-invalid` | error | yes | A journey or one of its steps is the wrong shape, so the journey was not run. A journey run past a step this tool could not read is not the journey that was declared. |
 | `path-escapes-root` | error | yes | A document resolves outside `--root`. A symbolic link inside the root is still a way out of it. |
-| `region-duplicate-ref` | error | yes | One ref on more than one region. |
+| `region-duplicate-ref` | error | yes | One ref on more than one region. As above, none of them is used and the ref stays refused. |
 | `schema-version-unsupported` | error | yes | A document declares a `schemaVersion` this tool does not read. It was not interpreted. |
 | `unknown-field` | error | yes | A field this tool does not read. A one-character typo would silently switch a check off, so it is refused rather than ignored. |
 
@@ -59,7 +59,7 @@ CLI and asserts the exit code.
 | --- | --- | :---: | --- |
 | `activation-undetermined` | warning | yes | The capture records no `activatedBy` for the control, or declares `activationObserved` false. Either way its list is what somebody happened to press, not what works, so nothing was judged. |
 | `key-not-activating` | error | no | The capture **did** observe activation, and the key the journey uses is not one of the keys that activate the control. |
-| `pointer-only-activation` | error | no | The capture **did** observe activation, and the control is activated by pointer only. A control a pointer can use and a keyboard cannot does not meet its keyboard contract. |
+| `pointer-only-activation` | error | no | The capture **did** observe activation, and it records no key that activates the control -- either pointer only, or nothing at all. A control a keyboard cannot activate does not meet its keyboard contract. |
 
 ## Dismissal and focus return
 

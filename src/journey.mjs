@@ -201,8 +201,17 @@ export function runJourney(journey, model) {
     }
     const keyboard = control.activatedBy.filter((entry) => entry !== 'pointer')
     if (keyboard.length === 0) {
-      emit(step, 'pointer-only-activation', `This journey activates "${excerpt(control.ref, REF_LIMIT)}" with ${excerpt(key, KEY_LIMIT)}, and this capture -- which did observe activation -- records it as activated by pointer only. A control a pointer can use and a keyboard cannot does not meet its keyboard contract.`, {
-        evidence: `activatedBy: ${control.activatedBy.map((entry) => excerpt(entry, KEY_LIMIT)).join(', ')}`,
+      // An empty activatedBy is not "pointer only": the capture recorded
+      // nothing that activates this control, and saying "pointer only" would
+      // put a fact in the report that the capture does not contain. The rule id
+      // covers both, because both are the same defect -- no keyboard way in.
+      const what = control.activatedBy.length === 0
+        ? 'records nothing at all as activating it'
+        : `records it as activated by ${control.activatedBy.map((entry) => excerpt(entry, KEY_LIMIT)).join(', ')} and by no key`
+      emit(step, 'pointer-only-activation', `This journey activates "${excerpt(control.ref, REF_LIMIT)}" with ${excerpt(key, KEY_LIMIT)}, and this capture -- which did observe activation -- ${what}. A control a keyboard cannot activate does not meet its keyboard contract.`, {
+        evidence: control.activatedBy.length === 0
+          ? 'activatedBy: (empty)'
+          : `activatedBy: ${control.activatedBy.map((entry) => excerpt(entry, KEY_LIMIT)).join(', ')}`,
         suggestion: 'Use a button element, or add a keydown handler for Enter and Space alongside the click handler.',
       })
       return
