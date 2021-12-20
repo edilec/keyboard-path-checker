@@ -51,7 +51,8 @@ CLI and asserts the exit code.
 | `control-not-reachable` | error | no | The journey reaches a control the capture records as `tabbable: false`. |
 | `control-undeclared` | error | yes | A step names a control the capture does not describe, so the step was not run and focus became undetermined. |
 | `tabbable-undetermined` | warning | yes | The capture does not say whether Tab reaches the control. Not stated is not the same as not reachable. |
-| `unreachable-behind-modal` | error | no | The journey tabs to a control outside the modal region that is open. A modal region confines the tab order to itself. |
+| `modal-not-declared` | warning | yes | A region is open and the capture does not declare whether it is modal, so whether the tab order is confined to it is not in the capture. Not declared is not the same as not modal. |
+| `unreachable-behind-modal` | error | no | The journey tabs to a control the capture does not place inside the modal region that is open. A modal region confines the tab order to itself. |
 
 ## Activation
 
@@ -124,14 +125,33 @@ CLI and asserts the exit code.
 ```
 
 - `activationObserved` is a claim about the capture, not about the fixture. Set
-  it `true` only once every key in every `activatedBy` list has really been
-  pressed and the ones that do nothing have really been tried. With it `false`
-  -- or absent -- no key is ever judged to fail, and every activation the
-  journeys reach is `activation-undetermined`.
-- `tabbable`, `activatedBy`, `dismissKeys`, `initialFocus` and
+  it `true` only once every key in every `activatedBy` list and every
+  `dismissKeys` list has really been pressed, and the ones that do nothing have
+  really been tried. With it `false` -- or absent -- no key is ever judged to
+  fail, and every activation the journeys reach is `activation-undetermined`.
+- `activationObserved` covers dismissal as well as activation. With it `false`
+  or absent no control ever activates, so no region is ever opened and no
+  `dismissKeys` list is ever judged either: `key-does-not-dismiss` cannot be
+  reached from a capture that did not observe activation.
+  `test/confinement.test.mjs` pins that.
+- `tabbable`, `activatedBy`, `modal`, `dismissKeys`, `initialFocus` and
   `restoresFocusTo` may all be left out. Leaving one out says "not observed",
-  and the checks that need it become undetermined rather than passing.
+  and the checks that need it become undetermined rather than passing. Writing
+  `null` says the same thing as leaving it out.
+- `region`, `opens` and `dismisses` are the other shape, and the difference is
+  deliberate. The five fields above are **observations**: whether Tab reaches a
+  control, whether a key activates it, whether a region confines the tab order --
+  each needs somebody to have tried it, so silence about one cannot be read as a
+  "no". These three are **structure**: which region a control belongs to, and
+  which region it opens or closes. A capture lists its regions and puts controls
+  in them, so a control with no `region` is one this document places in no
+  region, exactly as a control with no `opens` is one it says opens nothing.
+  That default is a statement the document makes, and `unreachable-behind-modal`
+  says which of the two it read.
 - A control declares `opens` **or** `dismisses`, not both.
+- `role`, `name` and a journey's `description` are the capture's own words for
+  the reader. This tool checks their shape and never reports, echoes or computes
+  them; see the non-goals in the README.
 - Unknown fields at any level are refused, not ignored.
 
 ## The journeys document
@@ -159,7 +179,7 @@ Exactly three step kinds, and a step declares exactly one of them:
 
 | Step | What it checks |
 | --- | --- |
-| `{ "tabTo": ref }` | The control exists in the capture, is `tabbable`, and is not behind an open modal region. Focus moves there. |
+| `{ "tabTo": ref }` | The control exists in the capture, is `tabbable`, and is not behind an open region the capture declares modal. Focus moves there. An open region whose `modal` the capture never declares makes the step `modal-not-declared` instead of either verdict. |
 | `{ "press": key, "on": ref }` | Everything `tabTo` checks, then activation: whether that key activates the control. The declared effect -- opening or dismissing a region -- is then applied. |
 | `{ "press": key }` | The key against the innermost open region's `dismissKeys`. |
 | `{ "expectFocus": ref }` | Where the capture puts focus, against where the journey expects it. An undetermined focus is not compared. |

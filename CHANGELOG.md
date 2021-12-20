@@ -6,6 +6,27 @@ follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html). A `ruleId`
 is part of the public interface: renaming one is a breaking change and is
 recorded here.
 
+## Unreleased
+
+### Added
+
+- `modal-not-declared` (warning, limitation): a region is open and the capture
+  does not declare whether it is modal.
+
+### Fixed
+
+- A region whose `modal` the capture never states is undetermined rather than
+  silently non-modal. A journey that tabbed out of such a region used to exit 0
+  with status `pass`, no findings and an empty `notEvaluated`; it now exits 2
+  with `modal-not-declared`. `modal` joins `tabbable`, `activatedBy`,
+  `dismissKeys`, `initialFocus` and `restoresFocusTo` as a field whose omission
+  says "not observed", and `null` says the same as leaving it out.
+- `unreachable-behind-modal` no longer says a capture "places that control
+  outside any region" when the control simply declares no `region`. It now says
+  the capture declares no region for it, which is what the document contains.
+  The default itself is unchanged and is now written down: `region`, `opens` and
+  `dismisses` are structure a capture states by omission, not observations.
+
 ## 0.1.0
 
 First release.

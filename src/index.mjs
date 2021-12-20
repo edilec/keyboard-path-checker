@@ -114,6 +114,7 @@ export const RULE_SEVERITY = Object.freeze({
   'journeys-empty': 'error',
   'key-does-not-dismiss': 'error',
   'key-not-activating': 'error',
+  'modal-not-declared': 'warning',
   'no-controls-declared': 'error',
   'nothing-checked': 'error',
   'path-escapes-root': 'error',
@@ -155,6 +156,7 @@ export const LIMITATION_RULES = Object.freeze([
   'input-too-large',
   'input-unreadable',
   'journey-invalid',
+  'modal-not-declared',
   'path-escapes-root',
   'region-duplicate-ref',
   'region-undeclared',
@@ -650,9 +652,13 @@ function readCapture(run, document, file, limits) {
         const restoresFocusTo = optionalRef(run, raw.restoresFocusTo, file, `${pointer}/restoresFocusTo`, "This region's restoresFocusTo")
         const initialFocus = optionalRef(run, raw.initialFocus, file, `${pointer}/initialFocus`, "This region's initialFocus")
         if (!dismissKeys.ok || !restoresFocusTo.ok || !initialFocus.ok) continue
-        let modal = false
+        // Not stated, like tabbable on a control: `modal` says whether the
+        // region confines the tab order, which is something somebody has to
+        // have TRIED. A silent default of false would let a capture that never
+        // looked report a journey that tabs out of a dialog as passing.
+        let modal = null
         if (typeof raw.modal === 'boolean') modal = raw.modal
-        else if (raw.modal !== undefined) {
+        else if (raw.modal !== undefined && raw.modal !== null) {
           run.addUnknown({
             file,
             ruleId: 'capture-invalid',

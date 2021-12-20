@@ -142,6 +142,11 @@ does, and the rule that enforces it is named.
 - **It does not invent focus.** A region that declares no `initialFocus` or no
   `restoresFocusTo` makes focus undetermined, not unchanged. The expectation
   that follows is `focus-undetermined`, not a mismatch and not a match.
+- **It does not assume a region is not modal.** A region whose `modal` the
+  capture never declares is `modal-not-declared` -- a step that reaches past it
+  is not run, and the run is `incomplete`. Whether a dialog confines the tab
+  order is something somebody has to have tried, exactly like `tabbable` and
+  `dismissKeys`, so silence about it is not a "no".
 - **It does not read a partial machine as a clean one.** Once the region stack
   is undetermined, `region-left-open` is never asserted -- neither is the
   opposite -- and `regionsLeftOpen` is reported as `null`.

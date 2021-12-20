@@ -53,12 +53,24 @@ export function runJourney(journey, model) {
     events.push({ step, ruleId, message, unknown: extra.unknown === true, ...extra })
   }
 
+  /**
+   * Which open region confines the tab order, as far as this capture says.
+   *
+   * Walks the open stack from the innermost outward: the first region the
+   * capture declares modal is the one that confines. A region whose `modal` the
+   * capture never states stops the walk as UNDETERMINED -- it may be the
+   * confining one, and a region the capture is silent about is not a region the
+   * capture calls non-modal. `{ known: true, ref: null }` is the capture saying
+   * nothing confines the tab order here.
+   */
   const confiningRegion = () => {
     for (let index = open.length - 1; index >= 0; index -= 1) {
       const region = model.regions.get(open[index])
-      if (region !== undefined && region.modal) return open[index]
+      if (region === undefined) continue
+      if (region.modal === null) return { known: false, ref: open[index] }
+      if (region.modal) return { known: true, ref: open[index] }
     }
-    return null
+    return { known: true, ref: null }
   }
 
   const resolveControl = (step, ref, what, tail) => {
@@ -163,8 +175,21 @@ export function runJourney(journey, model) {
       return null
     }
     const confining = confiningRegion()
-    if (stackKnown && confining !== null && control.region !== confining) {
-      emit(step, 'unreachable-behind-modal', `This journey reaches "${excerpt(ref, REF_LIMIT)}" while the modal region "${excerpt(confining, REF_LIMIT)}" is open, and this capture places that control ${control.region === null ? 'outside any region' : `in "${excerpt(control.region, REF_LIMIT)}"`}. A modal region confines the tab order to itself.`, {
+    if (stackKnown && !confining.known) {
+      emit(step, 'modal-not-declared', `This journey reaches "${excerpt(ref, REF_LIMIT)}" while the region "${excerpt(confining.ref, REF_LIMIT)}" is open, and this capture does not declare whether that region is modal -- so whether the tab order is confined to it was not read. Not declared is not the same as not modal.`, {
+        unknown: true,
+        suggestion: 'Record modal for the region, from a keyboard walk of the fixture.',
+      })
+      focus = unknownFocus(`whether the open region "${excerpt(confining.ref, REF_LIMIT)}" confines the tab order is not in this capture`)
+      return null
+    }
+    if (stackKnown && confining.ref !== null && control.region !== confining.ref) {
+      // What the capture contains, and no more: a control with no `region` is
+      // one this capture puts in no region, which is a statement the document
+      // makes by omission (docs/journey-rules.md says so) -- but it is not the
+      // same sentence as "somebody looked and it was outside", so the message
+      // does not say that.
+      emit(step, 'unreachable-behind-modal', `This journey reaches "${excerpt(ref, REF_LIMIT)}" while the modal region "${excerpt(confining.ref, REF_LIMIT)}" is open, and this capture ${control.region === null ? 'declares no region for that control' : `places that control in "${excerpt(control.region, REF_LIMIT)}"`}. A modal region confines the tab order to itself.`, {
         suggestion: 'Dismiss the region first, or correct the journey.',
       })
       focus = unknownFocus(`"${excerpt(ref, REF_LIMIT)}" is behind an open modal region, so focus did not move there`)
