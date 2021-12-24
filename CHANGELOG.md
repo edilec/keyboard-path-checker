@@ -21,6 +21,12 @@ recorded here.
   with `modal-not-declared`. `modal` joins `tabbable`, `activatedBy`,
   `dismissKeys`, `initialFocus` and `restoresFocusTo` as a field whose omission
   says "not observed", and `null` says the same as leaving it out.
+- A control or region dropped for being malformed now refuses its ref for the
+  rest of the document, as a duplicate collision already did. A malformed entry
+  followed by a valid one sharing its ref used to leave no trace of the ref, so
+  the valid entry passed the duplicate check, entered the index and was given a
+  definite verdict against a ref the document declares twice -- and swapping the
+  two entries flipped the verdict.
 - `unreachable-behind-modal` no longer says a capture "places that control
   outside any region" when the control simply declares no `region`. It now says
   the capture declares no region for it, which is what the document contains.

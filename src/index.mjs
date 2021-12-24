@@ -560,11 +560,23 @@ function readCapture(run, document, file, limits) {
       refusedControlRefs.add(raw.ref)
       continue
     }
+    // From here the ref has been read, so EVERY way this entry can still be
+    // dropped refuses the ref for the rest of the document -- not only a
+    // collision. An entry this run could not read is still an entry that named
+    // this ref, and a second entry naming it is still one control declared
+    // twice. Registering the ref only on the collision path made the verdict
+    // depend on which of the two came first: malformed-then-valid let the valid
+    // one walk into the index and be judged, and valid-then-malformed refused
+    // both.
+    const refuseControl = () => {
+      controls.delete(raw.ref)
+      refusedControlRefs.add(raw.ref)
+    }
     const opens = optionalRef(run, raw.opens, file, `${pointer}/opens`, "This control's opens")
     const dismisses = optionalRef(run, raw.dismisses, file, `${pointer}/dismisses`, "This control's dismisses")
     const region = optionalRef(run, raw.region, file, `${pointer}/region`, "This control's region")
     const activatedBy = optionalTokens(run, raw.activatedBy, file, `${pointer}/activatedBy`, 'activatedBy')
-    if (!opens.ok || !dismisses.ok || !region.ok || !activatedBy.ok) continue
+    if (!opens.ok || !dismisses.ok || !region.ok || !activatedBy.ok) { refuseControl(); continue }
     if (opens.value !== null && dismisses.value !== null) {
       run.addUnknown({
         file,
@@ -573,6 +585,7 @@ function readCapture(run, document, file, limits) {
         message: `"${excerpt(raw.ref, REF_LIMIT)}" declares both opens and dismisses. One control does one of the two in this model, so the entry was not used.`,
         suggestion: 'Split it into two controls, or record only the effect the journey exercises.',
       })
+      refuseControl()
       continue
     }
     let tabbable = null
@@ -585,6 +598,7 @@ function readCapture(run, document, file, limits) {
         message: `"tabbable" is ${shapeOf(raw.tabbable)}, not a boolean, so whether Tab reaches "${excerpt(raw.ref, REF_LIMIT)}" was not read.`,
         suggestion: 'Write tabbable as true or false, or leave it out to say it was not observed.',
       })
+      refuseControl()
       continue
     }
     controls.set(raw.ref, {
@@ -648,10 +662,16 @@ function readCapture(run, document, file, limits) {
           refusedRegionRefs.add(raw.ref)
           continue
         }
+        // As above: every later refusal registers the ref too, so the outcome
+        // does not depend on the order the entries appear in.
+        const refuseRegion = () => {
+          regions.delete(raw.ref)
+          refusedRegionRefs.add(raw.ref)
+        }
         const dismissKeys = optionalTokens(run, raw.dismissKeys, file, `${pointer}/dismissKeys`, 'dismissKeys')
         const restoresFocusTo = optionalRef(run, raw.restoresFocusTo, file, `${pointer}/restoresFocusTo`, "This region's restoresFocusTo")
         const initialFocus = optionalRef(run, raw.initialFocus, file, `${pointer}/initialFocus`, "This region's initialFocus")
-        if (!dismissKeys.ok || !restoresFocusTo.ok || !initialFocus.ok) continue
+        if (!dismissKeys.ok || !restoresFocusTo.ok || !initialFocus.ok) { refuseRegion(); continue }
         // Not stated, like tabbable on a control: `modal` says whether the
         // region confines the tab order, which is something somebody has to
         // have TRIED. A silent default of false would let a capture that never
@@ -666,6 +686,7 @@ function readCapture(run, document, file, limits) {
             message: `"modal" is ${shapeOf(raw.modal)}, not a boolean, so whether "${excerpt(raw.ref, REF_LIMIT)}" confines the tab order was not read.`,
             suggestion: 'Write modal as true or false.',
           })
+          refuseRegion()
           continue
         }
         regions.set(raw.ref, {

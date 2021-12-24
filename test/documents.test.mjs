@@ -45,6 +45,46 @@ test('three regions sharing a ref leave none of them in the index', async () => 
   assert.ok(ruleIds(report).includes('region-undeclared'))
 })
 
+test('a malformed entry and a valid one sharing a ref give the same verdict in either order', async () => {
+  // The refusal used to be registered only on the collision path, so a
+  // malformed entry left no trace of its ref: the valid entry that followed
+  // passed the duplicate check, walked into the index and was given a definite
+  // verdict against a ref the document declares twice. Swapping the two flipped
+  // the verdict, which is how the hole showed.
+  const valid = { ref: 'thing', tabbable: true, activatedBy: ['pointer'] }
+  const malformed = { ref: 'thing', opens: 123 }
+  const orders = [[malformed, valid], [valid, malformed]]
+  const seen = []
+  for (const controls of orders) {
+    const { code, report } = await reportFor({
+      'controls.json': capture({ controls }),
+      'journeys.json': journeys([{ id: 'j', steps: [{ press: 'Enter', on: 'thing' }] }]),
+    })
+    assert.equal(code, 2)
+    assert.equal(report.summary.controls, 0, 'a refused ref walked back into the index')
+    assert.ok(ruleIds(report).includes('control-duplicate-ref'), 'the duplicate was not reported at all')
+    assert.ok(ruleIds(report).includes('control-undeclared'))
+    assert.ok(!ruleIds(report).includes('pointer-only-activation'), 'a definite verdict came out of an index this run dropped a conflicting entry from')
+    seen.push(report.summary.controls)
+  }
+  assert.deepEqual(seen, [0, 0])
+})
+
+test('a malformed region and a valid one sharing a ref give the same verdict in either order', async () => {
+  const valid = { ref: 'confirm', modal: true, dismissKeys: ['Escape'], initialFocus: 'confirm-cancel', restoresFocusTo: 'open-dialog' }
+  const malformed = { ref: 'confirm', modal: 'yes' }
+  for (const regions of [[malformed, valid], [valid, malformed]]) {
+    const { code, report } = await reportFor({
+      'controls.json': capture({ controls: dialogControls(), regions }),
+      'journeys.json': journeys([{ id: 'j', steps: [{ press: 'Enter', on: 'open-dialog' }] }]),
+    })
+    assert.equal(code, 2)
+    assert.equal(report.summary.regions, 0, 'a refused ref walked back into the index')
+    assert.ok(ruleIds(report).includes('region-duplicate-ref'))
+    assert.ok(ruleIds(report).includes('region-undeclared'))
+  }
+})
+
 test('a control this tool refused is reported as undescribed, not resolved anyway', async () => {
   const controls = dialogControls()
   controls[1].tabbable = 'yes'
