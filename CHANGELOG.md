@@ -27,6 +27,9 @@ recorded here.
   the valid entry passed the duplicate check, entered the index and was given a
   definite verdict against a ref the document declares twice -- and swapping the
   two entries flipped the verdict.
+- `summary.journeys` counts the journeys the document declared rather than the
+  ones that survived validation, so three declared with one refused now reads
+  "2/3 journey(s) run" instead of "2/2".
 - `unreachable-behind-modal` no longer says a capture "places that control
   outside any region" when the control simply declares no `region`. It now says
   the capture declares no region for it, which is what the document contains.

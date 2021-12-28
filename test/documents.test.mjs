@@ -172,3 +172,22 @@ test('a field left out says "not observed", and a field written null says the sa
     assert.ok(ruleIds(report).includes('tabbable-undetermined'))
   }
 })
+
+test('the summary counts the journeys the document declared, not the ones that survived it', async () => {
+  // The denominator used to be the surviving journeys, so a document declaring
+  // three with one refused printed "2/2 journey(s) run" -- a fraction that
+  // reads as complete coverage of what was asked for.
+  const { code, report, stderr } = await reportFor({
+    'controls.json': capture({ controls: dialogControls(), regions: dialogRegion() }),
+    'journeys.json': journeys([
+      { id: 'a', steps: [{ tabTo: 'orders-table' }] },
+      { id: 'refused', steps: [{ tabTo: 7 }] },
+      { id: 'c', steps: [{ tabTo: 'orders-table' }] },
+    ]),
+  })
+  assert.equal(code, 2)
+  assert.equal(report.summary.journeys, 3)
+  assert.equal(report.summary.journeysRun, 2)
+  assert.ok(ruleIds(report).includes('journey-invalid'))
+  assert.match(stderr, /this run is not a pass/)
+})

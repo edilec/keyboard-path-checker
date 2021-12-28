@@ -880,7 +880,10 @@ function readJourneys(run, document, file, limits) {
     if (!usable) continue
     journeys.push({ id: entry.id, pointer, steps })
   }
-  return journeys
+  // `declared` is what the document asked for; `journeys` is what survived
+  // validation. Reporting the survivors as the denominator made a document with
+  // one refused journey read as "2/2 journey(s) run" when it declared three.
+  return { journeys, declared: raw.length }
 }
 
 /**
@@ -923,12 +926,12 @@ export async function checkKeyboardPaths(options = {}) {
   const journeysDocument = await readDocument(run, realRoot, journeysName, journeysFile, limits)
 
   const model = captureDocument === undefined ? null : readCapture(run, captureDocument, captureFile, limits)
-  const journeys = journeysDocument === undefined ? null : readJourneys(run, journeysDocument, journeysFile, limits)
+  const plan = journeysDocument === undefined ? null : readJourneys(run, journeysDocument, journeysFile, limits)
 
   const results = []
   let checked = 0
-  if (model !== null && journeys !== null) {
-    for (const journey of journeys) {
+  if (model !== null && plan !== null) {
+    for (const journey of plan.journeys) {
       if (monotonic() - started >= limits.maxRuntimeMs) {
         run.addUnknown({
           file: journeysFile,
@@ -990,7 +993,7 @@ export async function checkKeyboardPaths(options = {}) {
       warnings,
       controls: model === null ? 0 : model.controls.size,
       regions: model === null ? 0 : model.regions.size,
-      journeys: journeys === null ? 0 : journeys.length,
+      journeys: plan === null ? 0 : plan.declared,
       journeysRun: results.length,
       journeysComplete: results.filter((entry) => entry.complete).length,
       activationObserved: model === null ? false : model.activationObserved,
