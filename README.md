@@ -131,10 +131,12 @@ does, and the rule that enforces it is named.
   `false` and `summary.keysPressed` is `0` in every report this tool can
   produce. `summary.evidence` is the constant `"declared-capture"`.
 - **It does not emulate a screen reader.** Reaching and activating a control
-  says nothing about what was announced. There is no field in the report for
-  what a control announced, and the `name` in a capture is echoed as declared --
-  never computed, never called an accessible name. Actual spoken output needs
-  separate manual evidence, and this report cannot stand in for it.
+  says nothing about what was announced, and there is no field in the report for
+  what one announced. A capture's `role` and `name` are its own words for
+  whoever reads the document: this tool checks their shape and never reports,
+  echoes, computes or compares them, so nothing a report contains can be
+  mistaken for an accessible name. Actual spoken output needs separate manual
+  evidence, and this report cannot stand in for it.
 - **It does not judge a key nobody tried.** With `activationObserved` false or
   absent, every activation is `activation-undetermined` and no key is ever
   reported as failing. `examples/unobserved` is `examples/pointer-only` with

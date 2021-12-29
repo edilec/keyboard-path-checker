@@ -27,6 +27,13 @@ recorded here.
   the valid entry passed the duplicate check, entered the index and was given a
   definite verdict against a ref the document declares twice -- and swapping the
   two entries flipped the verdict.
+- `control.role`, `control.name`, `region.role`, `capture.method` and a
+  journey's `description` are validated. They were the only fields in either
+  document a malformed value could sit in silently -- `{"toString": {}}` at any
+  of them gave exit 0, status `pass` and an empty `notEvaluated` -- while every
+  other field was refused. The three that nothing reads no longer enter the
+  model either, and the README non-goal that said a capture's `name` is echoed
+  now says what the tool does: it checks the shape and reports nothing.
 - `summary.journeys` counts the journeys the document declared rather than the
   ones that survived validation, so three declared with one refused now reads
   "2/3 journey(s) run" instead of "2/2".

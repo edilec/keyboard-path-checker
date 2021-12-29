@@ -80,6 +80,36 @@ const DOCUMENTS = [
     text: /declares none of tabTo, press, expectFocus/,
   },
   {
+    where: 'capture.method',
+    files: { 'controls.json': `{ "schemaVersion": "1", "capture": { "method": ${HOSTILE}, "activationObserved": true }, "controls": [] }`, 'journeys.json': GOOD_JOURNEYS },
+    rule: 'capture-invalid',
+    text: /"method" is an object, not text of at most 200 characters/,
+  },
+  {
+    where: "a control's role",
+    files: { 'controls.json': `{ "schemaVersion": "1", "controls": [{ "ref": "a", "tabbable": true, "role": ${HOSTILE} }] }`, 'journeys.json': GOOD_JOURNEYS },
+    rule: 'capture-invalid',
+    text: /This control's role is an object/,
+  },
+  {
+    where: "a control's name",
+    files: { 'controls.json': `{ "schemaVersion": "1", "controls": [{ "ref": "a", "tabbable": true, "name": ${HOSTILE} }] }`, 'journeys.json': GOOD_JOURNEYS },
+    rule: 'capture-invalid',
+    text: /This control's name is an object/,
+  },
+  {
+    where: "a region's role",
+    files: { 'controls.json': `{ "schemaVersion": "1", "controls": [], "regions": [{ "ref": "r", "role": ${HOSTILE} }] }`, 'journeys.json': GOOD_JOURNEYS },
+    rule: 'capture-invalid',
+    text: /This region's role is an object/,
+  },
+  {
+    where: "a journey's description",
+    files: { 'controls.json': GOOD_CAPTURE, 'journeys.json': `{ "schemaVersion": "1", "journeys": [{ "id": "j", "description": ${HOSTILE}, "steps": [] }] }` },
+    rule: 'journey-invalid',
+    text: /This journey's description is an object/,
+  },
+  {
     where: 'a step value',
     files: { 'controls.json': GOOD_CAPTURE, 'journeys.json': `{ "schemaVersion": "1", "journeys": [{ "id": "j", "steps": [{ "tabTo": ${HOSTILE} }] }] }` },
     rule: 'journey-invalid',
@@ -104,4 +134,40 @@ test('the shape description carries nothing of the document', async () => {
     'journeys.json': GOOD_JOURNEYS,
   })
   assert.ok(!JSON.stringify(report).includes('AKIAIOSFODNN7EXAMPLE'))
+})
+
+test('a field this tool never reports is still refused rather than ignored', async () => {
+  // role, name and description are documentation for whoever reads the
+  // document; no code path reports, echoes or computes them. They used to be
+  // the only fields a malformed value could sit in silently -- exit 0, status
+  // pass, notEvaluated empty -- while every other field in both documents was
+  // refused. A field accepted without a check is a field a typo can put
+  // anything in.
+  const cases = [
+    { where: '/controls/0/role', controls: [{ ref: 'a', tabbable: true, activatedBy: ['Enter'], role: '\u0001\u0085' }] },
+    { where: '/controls/0/name', controls: [{ ref: 'a', tabbable: true, activatedBy: ['Enter'], name: 'x'.repeat(201) }] },
+  ]
+  for (const { where, controls } of cases) {
+    const { code, report } = await reportFor({
+      'controls.json': capture({ controls }),
+      'journeys.json': journeys([{ id: 'j', steps: [{ tabTo: 'a' }] }]),
+    })
+    assert.equal(code, 2, where)
+    const finding = report.findings.find((entry) => entry.ruleId === 'capture-invalid')
+    assert.ok(finding !== undefined, where)
+    assert.equal(finding.location.pointer, where)
+  }
+})
+
+test('no report carries a control name, a role or a description back out', async () => {
+  const { report } = await reportFor({
+    'controls.json': capture({
+      controls: [{ ref: 'a', role: 'nonesuchrole', name: 'Nonesuchname', tabbable: false, activatedBy: ['Enter'] }],
+    }),
+    'journeys.json': journeys([{ id: 'j', description: 'Nonesuchdescription', steps: [{ tabTo: 'a' }] }]),
+  })
+  const serialized = JSON.stringify(report)
+  for (const word of ['nonesuchrole', 'Nonesuchname', 'Nonesuchdescription']) {
+    assert.ok(!serialized.includes(word), `${word} reached the report`)
+  }
 })

@@ -176,6 +176,12 @@ const SUGGESTION_LIMIT = 300
 const EVIDENCE_LIMIT = 240
 const LOCATION_LIMIT = 200
 const REF_LIMIT = 120
+// Bounds on the three fields this tool validates and never reports, plus the
+// capture's own account of how it was made. Documented in docs/journey-rules.md.
+const ROLE_LIMIT = 60
+const NAME_LIMIT = 200
+const DESCRIPTION_LIMIT = 400
+const METHOD_LIMIT = 200
 
 const ALLOWED_OPTIONS = Object.freeze(['capture', 'journeys', 'limits', 'monotonic', 'root'])
 const ALLOWED_CAPTURE_FIELDS = Object.freeze(['capture', 'controls', 'regions', 'schemaVersion'])
@@ -426,6 +432,28 @@ function optionalRef(run, value, file, pointer, what) {
   return { ok: true, value }
 }
 
+/**
+ * A field this tool reads only to check its shape.
+ *
+ * `role`, `name` and a journey's `description` are the document's own words for
+ * whoever reads it. Nothing here reports, echoes or computes them -- the README
+ * non-goals say so -- but they are still validated, because a field accepted
+ * without a check is a field a typo can put anything in, and every other field
+ * in both documents is refused rather than ignored. The bounds are documented
+ * in docs/journey-rules.md.
+ */
+function optionalProse(run, value, file, pointer, what, limit, ruleId) {
+  if (value === undefined || isUsableText(value, limit)) return true
+  run.addUnknown({
+    file,
+    ruleId,
+    pointer,
+    message: `${what} is ${shapeOf(value)}, not text of at most ${limit} characters that survives sanitising, so the entry it belongs to was not used.`,
+    suggestion: `Write it as a short string, or leave it out. It is documentation for the reader; this tool never reports it.`,
+  })
+  return false
+}
+
 function optionalTokens(run, value, file, pointer, what) {
   if (value === undefined || value === null) return { ok: true, value: null }
   if (!Array.isArray(value)) {
@@ -476,6 +504,7 @@ function readCapture(run, document, file, limits) {
     })
   } else {
     unknownFields(run, meta, ALLOWED_CAPTURE_META_FIELDS, file, '/capture')
+    optionalProse(run, meta.method, file, '/capture/method', '"method"', METHOD_LIMIT, 'capture-invalid')
     if (typeof meta.activationObserved === 'boolean') activationObserved = meta.activationObserved
     else {
       run.addUnknown({
@@ -572,6 +601,11 @@ function readCapture(run, document, file, limits) {
       controls.delete(raw.ref)
       refusedControlRefs.add(raw.ref)
     }
+    if (!optionalProse(run, raw.role, file, `${pointer}/role`, "This control's role", ROLE_LIMIT, 'capture-invalid')
+      || !optionalProse(run, raw.name, file, `${pointer}/name`, "This control's name", NAME_LIMIT, 'capture-invalid')) {
+      refuseControl()
+      continue
+    }
     const opens = optionalRef(run, raw.opens, file, `${pointer}/opens`, "This control's opens")
     const dismisses = optionalRef(run, raw.dismisses, file, `${pointer}/dismisses`, "This control's dismisses")
     const region = optionalRef(run, raw.region, file, `${pointer}/region`, "This control's region")
@@ -603,8 +637,6 @@ function readCapture(run, document, file, limits) {
     }
     controls.set(raw.ref, {
       ref: raw.ref,
-      role: isUsableText(raw.role, 60) ? raw.role : null,
-      name: typeof raw.name === 'string' ? excerpt(raw.name, 200) : null,
       tabbable,
       activatedBy: activatedBy.value,
       opens: opens.value,
@@ -668,6 +700,10 @@ function readCapture(run, document, file, limits) {
           regions.delete(raw.ref)
           refusedRegionRefs.add(raw.ref)
         }
+        if (!optionalProse(run, raw.role, file, `${pointer}/role`, "This region's role", ROLE_LIMIT, 'capture-invalid')) {
+          refuseRegion()
+          continue
+        }
         const dismissKeys = optionalTokens(run, raw.dismissKeys, file, `${pointer}/dismissKeys`, 'dismissKeys')
         const restoresFocusTo = optionalRef(run, raw.restoresFocusTo, file, `${pointer}/restoresFocusTo`, "This region's restoresFocusTo")
         const initialFocus = optionalRef(run, raw.initialFocus, file, `${pointer}/initialFocus`, "This region's initialFocus")
@@ -691,7 +727,6 @@ function readCapture(run, document, file, limits) {
         }
         regions.set(raw.ref, {
           ref: raw.ref,
-          role: isUsableText(raw.role, 60) ? raw.role : null,
           modal,
           dismissKeys: dismissKeys.value,
           restoresFocusTo: restoresFocusTo.value,
@@ -776,6 +811,7 @@ function readJourneys(run, document, file, limits) {
       continue
     }
     seen.add(entry.id)
+    if (!optionalProse(run, entry.description, file, `${pointer}/description`, "This journey's description", DESCRIPTION_LIMIT, 'journey-invalid')) continue
     if (!Array.isArray(entry.steps)) {
       run.addUnknown({
         file,

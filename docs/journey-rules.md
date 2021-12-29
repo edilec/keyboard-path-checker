@@ -149,9 +149,13 @@ CLI and asserts the exit code.
   That default is a statement the document makes, and `unreachable-behind-modal`
   says which of the two it read.
 - A control declares `opens` **or** `dismisses`, not both.
-- `role`, `name` and a journey's `description` are the capture's own words for
-  the reader. This tool checks their shape and never reports, echoes or computes
-  them; see the non-goals in the README.
+- `role`, `name`, `capture.method` and a journey's `description` are the
+  documents' own words for the reader. This tool checks their shape and never
+  reports, echoes, computes or compares them; see the non-goals in the README.
+  They are still refused rather than ignored when malformed, because a field
+  accepted without a check is a field a typo can put anything in. Each must be
+  text that survives sanitising: at most 60 characters for `role`, 200 for
+  `name` and `method`, 400 for a `description`.
 - Unknown fields at any level are refused, not ignored.
 
 ## The journeys document
