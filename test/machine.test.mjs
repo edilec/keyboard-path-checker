@@ -222,3 +222,31 @@ test('the summary counts what was checked, and a run that checked nothing says s
   assert.ok(ruleIds(report).includes('nothing-checked'))
   assert.equal(code, 1)
 })
+
+test('a capture that did not observe activation never judges a dismiss key either', async () => {
+  // activationObserved guards activatedBy at the point the key is compared.
+  // It covers dismissal too, and the machine's shape is what makes that true:
+  // with the flag false no control ever activates, so no region is ever opened
+  // and the dismissKeys comparison is never reached. docs/journey-rules.md now
+  // says the flag covers both, and this is the assertion behind the sentence --
+  // both directions, so it is not satisfied by the rule simply never firing.
+  const files = (activationObserved) => ({
+    'controls.json': capture({
+      controls: dialogControls(),
+      regions: dialogRegion({ dismissKeys: ['Enter'] }),
+      activationObserved,
+    }),
+    'journeys.json': journeys([{ id: 'j', steps: [{ press: 'Enter', on: 'open-dialog' }, { press: 'Escape' }] }]),
+  })
+  const unobserved = await reportFor(files(false))
+  assert.equal(unobserved.code, 2)
+  assert.equal(unobserved.report.summary.errors, 0)
+  assert.ok(ruleIds(unobserved.report).includes('activation-undetermined'))
+  assert.ok(
+    !ruleIds(unobserved.report).includes('key-does-not-dismiss'),
+    'a capture that never tried the keys was allowed to falsify one',
+  )
+  const observed = await reportFor(files(true))
+  assert.equal(observed.code, 1)
+  assert.ok(ruleIds(observed.report).includes('key-does-not-dismiss'))
+})

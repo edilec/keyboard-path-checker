@@ -13,6 +13,13 @@ recorded here.
 - `modal-not-declared` (warning, limitation): a region is open and the capture
   does not declare whether it is modal.
 
+### Changed
+
+- `capture.activationObserved` is documented as covering dismissal as well as
+  activation: with it false no control activates, so no region opens and no
+  `dismissKeys` list is ever judged. That was already true of the machine and
+  was stated nowhere; `test/machine.test.mjs` now pins it in both directions.
+
 ### Fixed
 
 - A region whose `modal` the capture never states is undetermined rather than

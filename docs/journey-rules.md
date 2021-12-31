@@ -133,7 +133,7 @@ CLI and asserts the exit code.
   or absent no control ever activates, so no region is ever opened and no
   `dismissKeys` list is ever judged either: `key-does-not-dismiss` cannot be
   reached from a capture that did not observe activation.
-  `test/confinement.test.mjs` pins that.
+  `test/machine.test.mjs` pins that, in both directions.
 - `tabbable`, `activatedBy`, `modal`, `dismissKeys`, `initialFocus` and
   `restoresFocusTo` may all be left out. Leaving one out says "not observed",
   and the checks that need it become undetermined rather than passing. Writing

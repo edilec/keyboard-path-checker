@@ -139,8 +139,10 @@ does, and the rule that enforces it is named.
   evidence, and this report cannot stand in for it.
 - **It does not judge a key nobody tried.** With `activationObserved` false or
   absent, every activation is `activation-undetermined` and no key is ever
-  reported as failing. `examples/unobserved` is `examples/pointer-only` with
-  that one field flipped, and it exits 2 instead of 1.
+  reported as failing -- a dismiss key included, because no control activates,
+  so no region opens and no `dismissKeys` list is reached.
+  `examples/unobserved` is `examples/pointer-only` with that one machine-read
+  field flipped, and it exits 2 instead of 1.
 - **It does not invent focus.** A region that declares no `initialFocus` or no
   `restoresFocusTo` makes focus undetermined, not unchanged. The expectation
   that follows is `focus-undetermined`, not a mismatch and not a match.
