@@ -75,8 +75,11 @@ control that opened it. Exit 1.
 node bin/keyboard-path-checker.mjs --root examples/unobserved
 ```
 
-**The same journeys and the same controls as `pointer-only`**, with one field
-changed: `activationObserved` is `false`. The pointer-only failure is no longer
+**The same journeys and the same controls as `pointer-only`**, with one
+machine-read field changed: `activationObserved` is `false`. The capture's
+`method` also differs, because it says how the capture was made and this one was
+made differently -- but nothing reads it, and `test/examples.test.mjs` proves
+that swapping it alone moves no verdict. The pointer-only failure is no longer
 asserted -- because a capture that never tried the keys cannot falsify one --
 and every downstream expectation becomes undetermined with it. Exit 2, status
 `incomplete`, **zero errors**: the incomplete flag alone is what keeps this off

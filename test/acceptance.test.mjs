@@ -167,18 +167,44 @@ test('a control that takes the key the journey uses raises nothing at all', asyn
 })
 
 test('no report this tool can produce claims a browser was driven or a screen reader emulated', async () => {
-  const { report } = await reportFor({
-    'controls.json': capture({ controls: dialogControls(), regions: dialogRegion() }),
+  // The word scan used to run over ONE report, from a capture that passes with
+  // zero findings. Every message string this tool can emit lives in a finding,
+  // so that scan could never see one: it was an assertion that could not fail.
+  // These three reports between them carry an error-severity finding, a
+  // limitation finding and none at all, and the count below refuses to let the
+  // scan go quiet again.
+  const passing = await reportFor({
+    'controls.json': capture({ controls: dialogControls({ activatedBy: ['Enter', 'pointer'] }), regions: dialogRegion() }),
     'journeys.json': journeys(OPEN_AND_ESCAPE),
   })
-  assert.equal(report.summary.browserDriven, false)
-  assert.equal(report.summary.keysPressed, 0)
-  assert.equal(report.summary.screenReaderEmulated, false)
-  assert.equal(report.summary.evidence, 'declared-capture')
-  const serialized = JSON.stringify(report)
-  for (const word of ['announce', 'spoken', 'screen reader said', 'verified']) {
-    assert.ok(!serialized.toLowerCase().includes(word), `the report claims "${word}"`)
+  const failing = await reportFor({
+    'controls.json': capture({ controls: dialogControls({ activatedBy: ['pointer'] }), regions: dialogRegion() }),
+    'journeys.json': journeys(OPEN_AND_ESCAPE),
+  })
+  const incomplete = await reportFor({
+    'controls.json': capture({
+      controls: dialogControls({ activatedBy: ['pointer'] }),
+      regions: dialogRegion({ restoresFocusTo: null, initialFocus: null, dismissKeys: null, modal: null }),
+      activationObserved: false,
+    }),
+    'journeys.json': journeys([...OPEN_AND_ESCAPE, { id: 'nowhere', steps: [{ tabTo: 'no-such-control' }] }]),
+  })
+  assert.deepEqual([passing.code, failing.code, incomplete.code], [0, 1, 2])
+  assert.equal(passing.report.findings.length, 0)
+
+  let messages = 0
+  for (const { report } of [passing, failing, incomplete]) {
+    assert.equal(report.summary.browserDriven, false)
+    assert.equal(report.summary.keysPressed, 0)
+    assert.equal(report.summary.screenReaderEmulated, false)
+    assert.equal(report.summary.evidence, 'declared-capture')
+    const serialized = JSON.stringify(report)
+    for (const word of ['announce', 'spoken', 'screen reader said', 'verified', 'confirmed that']) {
+      assert.ok(!serialized.toLowerCase().includes(word), `the report claims "${word}"`)
+    }
+    messages += report.findings.length
   }
+  assert.ok(messages >= 6, `only ${messages} finding message(s) were scanned, so the scan is close to vacuous`)
 })
 
 test('the human summary says what was not done, on every run', async () => {
