@@ -53,9 +53,17 @@ const CONFIGURATION_ERRORS = [
   { why: 'a repeated flag', args: ['--root', '.', '--root', '.'] },
   { why: 'a repeated limit', args: ['--root', '.', '--max-journeys', '5', '--max-journeys', '6'] },
   { why: 'a flag with no value', args: ['--root'] },
+  // A value that is itself a flag: without the leading-dash check the flag
+  // swallows the next one, the run reads a document named "--json" and the
+  // configuration error turns into a report on stdout -- the other exit-2 shape.
+  { why: 'a value flag followed by another flag', args: ['--root', '.', '--capture', '--json'] },
   { why: 'a limit that is not a positive integer', args: ['--root', '.', '--max-journeys', 'many'] },
   { why: 'a limit of zero', args: ['--root', '.', '--max-journeys', '0'] },
   { why: 'a limit past its cap', args: ['--root', '.', '--max-journeys', '9999999999'] },
+  // Number() accepts these and the documented form does not. Without the
+  // digits-only check the limit is silently set to 16 and 1000.
+  { why: 'a limit written in a form only Number() accepts', args: ['--root', '.', '--max-journeys', '0x10'] },
+  { why: 'a limit written in exponent form', args: ['--root', '.', '--max-journeys', '1e3'] },
   { why: 'a root that is not there', args: ['--root', '/no/such/directory/anywhere'] },
 ]
 
