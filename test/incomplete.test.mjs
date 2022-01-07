@@ -161,3 +161,36 @@ test('a journey stops at a step this tool could not read, rather than running pa
   assert.equal(report.summary.journeysRun, 0)
   assert.ok(!ruleIds(report).includes('focus-mismatch'))
 })
+
+test('the findings cap makes the run incomplete on its own, with no other limitation to do it', async () => {
+  // There are two `incomplete = true` assignments, not one: the documented one
+  // inside addUnknown, and the one in the findings cap. Every case above
+  // reaches the cap's assignment only alongside a limitation that would have
+  // set the flag anyway, so deleting the cap's own assignment left the whole
+  // suite green while turning exit 2 into exit 1 -- on a run whose report still
+  // says "not evaluated: too-many-findings".
+  //
+  // Here every finding except the cap's own is error-severity and none is a
+  // limitation, so the cap is the only thing that can make this incomplete.
+  const files = {
+    'controls.json': capture({
+      controls: [
+        { ref: 'a', tabbable: false, activatedBy: ['Enter'] },
+        { ref: 'b', tabbable: false, activatedBy: ['Enter'] },
+        { ref: 'c', tabbable: false, activatedBy: ['Enter'] },
+      ],
+      regions: [],
+    }),
+    'journeys.json': journeys([{ id: 'j', steps: [{ tabTo: 'a' }, { tabTo: 'b' }, { tabTo: 'c' }] }]),
+  }
+  const uncapped = await reportFor(files)
+  assert.equal(uncapped.code, 1, 'without the cap this run is a plain failure')
+  assert.equal(uncapped.report.status, 'fail')
+  assert.deepEqual(uncapped.report.summary.notEvaluated, [])
+
+  const capped = await reportFor(files, ['--max-findings', '1'])
+  assert.ok(ruleIds(capped.report).includes('too-many-findings'))
+  assert.equal(capped.report.status, 'incomplete', 'what was dropped is not known to be clean')
+  assert.equal(capped.code, 2)
+  assert.ok(capped.report.summary.notEvaluated.includes('too-many-findings'))
+})
