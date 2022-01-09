@@ -250,3 +250,49 @@ test('a capture that did not observe activation never judges a dismiss key eithe
   assert.equal(observed.code, 1)
   assert.ok(ruleIds(observed.report).includes('key-does-not-dismiss'))
 })
+
+test('a control the capture puts in no region is said to be exactly that, not to have been looked at', async () => {
+  // `region` is STRUCTURE, not an observation: docs/journey-rules.md says a
+  // control with no `region` is one this document places in no region, exactly
+  // as a control with no `opens` is one it says opens nothing. That default is
+  // a statement the document makes -- but it is not the same sentence as
+  // "somebody looked and it was outside the region", and the finding used to
+  // say the second one. The two readings are distinguished here so the wording
+  // cannot drift back.
+  const controls = dialogControls()
+  const outside = controls.find((control) => control.ref === 'orders-table')
+  delete outside.region
+
+  const undeclared = await reportFor({
+    'controls.json': capture({ controls, regions: dialogRegion() }),
+    'journeys.json': journeys(WALKS_OUT),
+  })
+  assert.equal(undeclared.code, 1)
+  const finding = undeclared.report.findings.find((entry) => entry.ruleId === 'unreachable-behind-modal')
+  assert.ok(finding !== undefined, JSON.stringify(ruleIds(undeclared.report)))
+  assert.match(finding.message, /declares no region for that control/)
+  assert.ok(!finding.message.includes('outside any region'), 'the capture places it nowhere; it does not place it outside')
+
+  // A control the capture DOES place, in a different region, is the other
+  // sentence, and it names the region rather than shrugging.
+  outside.region = 'elsewhere'
+  const elsewhere = await reportFor({
+    'controls.json': capture({
+      controls,
+      regions: [...dialogRegion(), { ref: 'elsewhere', modal: false, dismissKeys: ['Escape'] }],
+    }),
+    'journeys.json': journeys(WALKS_OUT),
+  })
+  assert.equal(elsewhere.code, 1)
+  const named = elsewhere.report.findings.find((entry) => entry.ruleId === 'unreachable-behind-modal')
+  assert.match(named.message, /places that control in "elsewhere"/)
+
+  // And a control the capture places INSIDE the open region raises nothing, so
+  // neither message above is the rule firing on everything.
+  outside.region = 'confirm'
+  const inside = await reportFor({
+    'controls.json': capture({ controls, regions: dialogRegion() }),
+    'journeys.json': journeys(WALKS_OUT),
+  })
+  assert.ok(!ruleIds(inside.report).includes('unreachable-behind-modal'))
+})
