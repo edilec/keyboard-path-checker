@@ -1,0 +1,52 @@
+{
+  "name": "keyboard-path-checker",
+  "version": "0.1.0",
+  "description": "Run declared keyboard journeys against a declared capture of a local fixture's controls -- reachability, activation, dismissal and focus return -- and report what the capture could not tell it rather than passing on silence.",
+  "type": "module",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "lint": "for file in bin/*.mjs src/*.mjs test/*.mjs; do node --check \"$file\" || exit 1; done",
+    "test": "node --test",
+    "test:coverage": "node --test --experimental-test-coverage --test-coverage-include=src/**",
+    "example": "node bin/keyboard-path-checker.mjs --root examples/restores-focus",
+    "example:failing": "node bin/keyboard-path-checker.mjs --root examples/pointer-only; test $? -eq 1",
+    "example:incomplete": "node bin/keyboard-path-checker.mjs --root examples/unobserved; test $? -eq 2",
+    "pack:check": "npm pack --dry-run",
+    "check": "npm run lint && npm test && npm run example && npm run example:failing && npm run example:incomplete && npm run pack:check"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/edilec/keyboard-path-checker.git"
+  },
+  "bin": {
+    "keyboard-path-checker": "./bin/keyboard-path-checker.mjs"
+  },
+  "exports": {
+    ".": "./src/index.mjs"
+  },
+  "files": [
+    "bin",
+    "src",
+    "examples",
+    "docs",
+    "README.md",
+    "CHANGELOG.md",
+    "LICENSE"
+  ],
+  "keywords": [
+    "accessibility",
+    "keyboard",
+    "focus-management",
+    "dialog",
+    "static-analysis",
+    "cli"
+  ],
+  "author": "Edilec Private Limited",
+  "bugs": {
+    "url": "https://github.com/edilec/keyboard-path-checker/issues"
+  },
+  "homepage": "https://github.com/edilec/keyboard-path-checker#readme"
+}
