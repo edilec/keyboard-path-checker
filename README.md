@@ -5,6 +5,7 @@ controls -- reachability, activation, dismissal and focus return -- and report
 what the capture could not tell it rather than passing on silence.
 
 - **Repository:** [edilec/keyboard-path-checker](https://github.com/edilec/keyboard-path-checker)
+- **Worked example:** [Keyboard Path Checker at Edilec](https://edilec.com/open-source/keyboard-path-checker/) — a checked-in declared-capture example with result guidance and limits, not a browser-driven accessibility test.
 - **Area:** Accessibility
 - **License:** MIT
 
